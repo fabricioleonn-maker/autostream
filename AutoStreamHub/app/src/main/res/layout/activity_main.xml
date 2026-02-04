@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212"
+    android:padding="16dp">
+    <TextView android:id="@+id/tvTime" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="20sp" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
+    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintTop_toTopOf="parent">
+        <ImageButton android:id="@+id/btnWifiSettings" android:layout_width="48dp" android:layout_height="48dp" android:src="@android:drawable/ic_menu_preferences" android:background="?selectableItemBackgroundBorderless" />
+        <ImageButton android:id="@+id/btnPlayStore" android:layout_width="48dp" android:layout_height="48dp" android:src="@android:drawable/ic_menu_shop_window" android:background="?selectableItemBackgroundBorderless" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/favorites" android:layout_width="match_parent" android:layout_height="0dp" app:layout_constraintHeight_percent="0.5" app:layout_constraintTop_toBottomOf="@id/tvTime" android:weightSum="5">
+        <include android:id="@+id/slot1" layout="@layout/item_favorite_slot" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" />
+        <include android:id="@+id/slot2" layout="@layout/item_favorite_slot" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" />
+        <include android:id="@+id/slot3" layout="@layout/item_favorite_slot" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" />
+        <include android:id="@+id/slot4" layout="@layout/item_favorite_slot" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" />
+        <include android:id="@+id/slot5" layout="@layout/item_favorite_slot" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" />
+    </LinearLayout>
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvSecondaryApps" android:layout_width="match_parent" android:layout_height="0dp" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintTop_toBottomOf="@id/favorites" />
+</androidx.constraintlayout.widget.ConstraintLayout>
