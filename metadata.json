@@ -1,0 +1,8 @@
+
+{
+  "name": "AutoHub Connected Mobility",
+  "description": "A high-end automotive infotainment system interface featuring settings, music, navigation, and vehicle monitoring controls.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
