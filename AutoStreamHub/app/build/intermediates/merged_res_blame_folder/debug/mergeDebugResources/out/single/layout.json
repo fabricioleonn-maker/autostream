@@ -1,0 +1,22 @@
+[
+    {
+        "merged": "com.voke.autostream.app-mergeDebugResources-3:/layout/item_app_small.xml",
+        "source": "com.voke.autostream.app-main-6:/layout/item_app_small.xml"
+    },
+    {
+        "merged": "com.voke.autostream.app-mergeDebugResources-3:/layout/activity_app_bridge.xml",
+        "source": "com.voke.autostream.app-main-6:/layout/activity_app_bridge.xml"
+    },
+    {
+        "merged": "com.voke.autostream.app-mergeDebugResources-3:/layout/activity_main.xml",
+        "source": "com.voke.autostream.app-main-6:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.voke.autostream.app-mergeDebugResources-3:/layout/activity_splash.xml",
+        "source": "com.voke.autostream.app-main-6:/layout/activity_splash.xml"
+    },
+    {
+        "merged": "com.voke.autostream.app-mergeDebugResources-3:/layout/item_favorite_slot.xml",
+        "source": "com.voke.autostream.app-main-6:/layout/item_favorite_slot.xml"
+    }
+]

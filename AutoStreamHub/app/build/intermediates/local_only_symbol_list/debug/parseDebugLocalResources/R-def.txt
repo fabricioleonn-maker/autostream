@@ -1,0 +1,19 @@
+R_DEF: Internal format may change without notice
+local
+id ivAppIcon
+id ivIcon
+id progressBar
+id tvAppName
+id tvName
+id tvStatus
+id videoView
+id webView
+layout activity_app_bridge
+layout activity_main
+layout activity_splash
+layout item_app_small
+layout item_favorite_slot
+mipmap ic_launcher
+style Theme.AutoStreamHub
+style Theme.AutoStreamHub.Fullscreen
+xml file_paths

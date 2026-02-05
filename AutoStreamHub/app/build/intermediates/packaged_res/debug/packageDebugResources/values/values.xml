@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.AutoStreamHub" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#1E88E5</item>
+        <item name="android:windowBackground">#121212</item>
+    </style>
+    <style name="Theme.AutoStreamHub.Fullscreen" parent="Theme.AutoStreamHub">
+        <item name="android:windowFullscreen">true</item>
+    </style>
+</resources>

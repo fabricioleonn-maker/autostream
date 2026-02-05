@@ -26,3 +26,12 @@ export interface Device {
   status: 'Connected' | 'Disconnected';
   icon: string;
 }
+
+export interface AppConfig {
+  id: string;
+  name: string;
+  packageName: string;
+  iconUrl: string;
+  webUrl?: string;
+  mode?: 'webview' | 'native';
+}

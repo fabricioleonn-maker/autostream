@@ -1,9 +1,6 @@
-
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const SplashScreen: React.FC = () => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [videoError, setVideoError] = useState(false);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -18,85 +15,84 @@ const SplashScreen: React.FC = () => {
       });
     }, 50);
 
-    if (videoRef.current) {
-      videoRef.current.play().catch((err) => {
-        console.warn("Autoplay blocked or video not found:", err);
-        setVideoError(true);
-      });
-    }
-
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="h-screen w-screen bg-black flex items-center justify-center relative overflow-hidden">
-      {!videoError ? (
-        <video
-          ref={videoRef}
-          autoPlay
-          muted
-          playsInline
-          onEnded={() => {}}
-          onError={() => setVideoError(true)}
-          className="absolute inset-0 w-full h-full object-cover z-0"
-        >
-          <source 
-            src="https://raw.githubusercontent.com/lucas-m-pinto/auto-assets/main/autostream_premium.mp4" 
-            type="video/mp4" 
-          />
-        </video>
-      ) : null}
+    <div className="h-screen w-screen bg-[#0B0F19] flex items-center justify-center relative overflow-hidden">
+
+      {/* Background Effects */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-sky-500/10 blur-[120px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-600/10 blur-[120px] rounded-full animate-pulse delay-700" />
+      </div>
 
       {/* Camada de Interface: Logo e Carregamento */}
-      <div className="relative z-20 flex flex-col items-center justify-center space-y-12 w-full max-w-md animate-in fade-in duration-1000">
+      <div className="relative z-20 flex flex-col items-center justify-center space-y-12 w-full max-w-md transition-all duration-1000 ease-out opacity-100 scale-100">
         <div className="relative group">
           {/* Efeito de brilho externo */}
-          <div className="absolute -inset-8 bg-sky-500/20 blur-[80px] rounded-full animate-pulse"></div>
-          
-          {/* Logo Triângulo Play Azul 3D */}
-          <div className="relative w-40 h-40 flex items-center justify-center">
-              <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-[0_0_20px_rgba(56,189,248,0.7)]">
-                  <defs>
-                      <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" style={{ stopColor: '#38bdf8', stopOpacity: 1 }} />
-                          <stop offset="100%" style={{ stopColor: '#0284c7', stopOpacity: 1 }} />
-                      </linearGradient>
-                      <filter id="shadow">
-                        <feDropShadow dx="2" dy="2" stdDeviation="3" floodOpacity="0.5"/>
-                      </filter>
-                  </defs>
-                  <rect x="20" y="20" width="160" height="160" rx="42" fill="#1e293b" stroke="#334155" strokeWidth="2" />
-                  <path d="M70,55 L150,100 L70,145 Z" fill="url(#logoGrad)" filter="url(#shadow)" />
-                  <path d="M82,82 L115,100 L82,118 Z" fill="#0f172a" opacity="0.4" />
-              </svg>
+          <div className="absolute -inset-8 bg-sky-500/20 blur-[60px] rounded-full animate-pulse"></div>
+
+          {/* Logo Triângulo Play Azul 3D - CSS Pure */}
+          <div className="relative w-48 h-48 flex items-center justify-center transform hover:scale-105 transition-transform duration-500">
+            <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-[0_0_30px_rgba(56,189,248,0.5)]">
+              <defs>
+                <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style={{ stopColor: '#38bdf8', stopOpacity: 1 }} />
+                  <stop offset="100%" style={{ stopColor: '#0284c7', stopOpacity: 1 }} />
+                </linearGradient>
+                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="5" result="coloredBlur" />
+                  <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              {/* Rounded Rect Base */}
+              <rect x="20" y="20" width="160" height="160" rx="42"
+                fill="#1e293b" stroke="#334155" strokeWidth="2" />
+
+              {/* Play Triangle */}
+              <path d="M70,55 L150,100 L70,145 Z"
+                fill="url(#logoGrad)" filter="url(#glow)"
+                className="animate-pulse" />
+
+              {/* Gloss Effect */}
+              <path d="M82,82 L115,100 L82,118 Z"
+                fill="#0f172a" opacity="0.4" />
+            </svg>
           </div>
         </div>
 
-        <div className="w-full px-12 flex flex-col items-center space-y-4">
-          <div className="text-center space-y-1">
-            <h1 className="text-3xl font-black tracking-[0.25em] text-white uppercase italic">
-              AUTO<span className="text-sky-400">STREAM</span>
+        <div className="w-full px-12 flex flex-col items-center space-y-6">
+          <div className="text-center space-y-2">
+            <h1 className="text-4xl font-black tracking-[0.25em] text-white uppercase italic drop-shadow-xl">
+              AUTO<span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-600">STREAM</span>
             </h1>
-            <p className="text-[10px] text-sky-500/80 font-bold tracking-[0.6em] uppercase">
-              PREMIUM EDITION
+            <p className="text-xs text-slate-400 font-bold tracking-[0.8em] uppercase border-t border-slate-800 pt-2 mt-2">
+              Premium Edition
             </p>
           </div>
 
           {/* Animação de Carregamento */}
-          <div className="w-full max-w-[200px] h-1 bg-white/10 rounded-full overflow-hidden relative">
-            <div 
-              className="h-full bg-sky-500 shadow-[0_0_10px_rgba(14,165,233,0.8)] transition-all duration-300 ease-out"
-              style={{ width: `${progress}%` }}
-            ></div>
+          <div className="w-full max-w-[240px] flex flex-col items-center gap-2">
+            <div className="w-full h-1.5 bg-slate-800/50 rounded-full overflow-hidden backdrop-blur-sm border border-white/5">
+              <div
+                className="h-full bg-gradient-to-r from-sky-500 via-blue-500 to-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.6)] animate-shimmer"
+                style={{
+                  width: `${progress}%`,
+                  backgroundSize: '200% 100%'
+                }}
+              ></div>
+            </div>
+            <div className="flex justify-between w-full text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+              <span>System Check</span>
+              <span>{progress}%</span>
+            </div>
           </div>
-          <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest animate-pulse">
-            Sincronizando Sistema... {progress}%
-          </span>
         </div>
       </div>
-
-      {/* Vinheta de acabamento premium */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/50 pointer-events-none z-10"></div>
     </div>
   );
 };

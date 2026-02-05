@@ -1,0 +1,46 @@
+[
+    {
+        "merged": "C:\\Users\\fabri\\.gradle\\daemon\\8.13\\com.voke.autostream.app-debug-4:\\xml_file_paths.xml.flat",
+        "source": "C:\\Users\\fabri\\.gradle\\daemon\\8.13\\com.voke.autostream.app-main-6:\\xml\\file_paths.xml"
+    },
+    {
+        "merged": "com.voke.autostream.app-debug-4:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "com.voke.autostream.app-main-6:/mipmap-xhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "C:\\Users\\fabri\\.gradle\\daemon\\8.13\\com.voke.autostream.app-debug-4:\\layout_item_app_small.xml.flat",
+        "source": "C:\\Users\\fabri\\.gradle\\daemon\\8.13\\com.voke.autostream.app-main-6:\\layout\\item_app_small.xml"
+    },
+    {
+        "merged": "C:\\Users\\fabri\\.gradle\\daemon\\8.13\\com.voke.autostream.app-debug-4:\\layout_item_favorite_slot.xml.flat",
+        "source": "C:\\Users\\fabri\\.gradle\\daemon\\8.13\\com.voke.autostream.app-main-6:\\layout\\item_favorite_slot.xml"
+    },
+    {
+        "merged": "com.voke.autostream.app-debug-4:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "com.voke.autostream.app-main-6:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "C:\\Users\\fabri\\.gradle\\daemon\\8.13\\com.voke.autostream.app-debug-4:\\layout_activity_splash.xml.flat",
+        "source": "C:\\Users\\fabri\\.gradle\\daemon\\8.13\\com.voke.autostream.app-main-6:\\layout\\activity_splash.xml"
+    },
+    {
+        "merged": "C:\\Users\\fabri\\.gradle\\daemon\\8.13\\com.voke.autostream.app-debug-4:\\layout_activity_main.xml.flat",
+        "source": "C:\\Users\\fabri\\.gradle\\daemon\\8.13\\com.voke.autostream.app-main-6:\\layout\\activity_main.xml"
+    },
+    {
+        "merged": "com.voke.autostream.app-debug-4:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "com.voke.autostream.app-main-6:/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.voke.autostream.app-debug-4:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "com.voke.autostream.app-main-6:/mipmap-hdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.voke.autostream.app-debug-4:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "com.voke.autostream.app-main-6:/mipmap-xxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "C:\\Users\\fabri\\.gradle\\daemon\\8.13\\com.voke.autostream.app-debug-4:\\layout_activity_app_bridge.xml.flat",
+        "source": "C:\\Users\\fabri\\.gradle\\daemon\\8.13\\com.voke.autostream.app-main-6:\\layout\\activity_app_bridge.xml"
+    }
+]

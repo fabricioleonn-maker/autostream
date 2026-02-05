@@ -1,6 +1,7 @@
 
-import React from 'react';
-import { Screen } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Screen, AppConfig } from '../types';
+import { APP_LIBRARY } from '../appIcons';
 
 interface DashboardProps {
   onNavigate: (screen: Screen) => void;
@@ -8,6 +9,133 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const currentDateTime = "Seg, 03 Fev • 10:30 AM • 24°C";
+
+  const [sidebarApps, setSidebarApps] = useState<AppConfig[]>([]);
+  const [dashboardApps, setDashboardApps] = useState<AppConfig[]>([]);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [showAppPicker, setShowAppPicker] = useState<{ type: 'sidebar' | 'dashboard', index?: number } | null>(null);
+  const [activeWebApp, setActiveWebApp] = useState<string | null>(null);
+
+  useEffect(() => {
+    const savedSidebar = localStorage.getItem('sidebar_apps');
+    const savedDashboard = localStorage.getItem('dashboard_apps');
+
+    const syncAppsWithLibrary = (apps: any[]) => {
+      console.log("Syncing apps with library...");
+      return apps.map((app: any) => {
+        if (!app || app.id === 'empty') return app;
+        // Search by packageName first, then id, then name
+        const libApp = APP_LIBRARY.find(a =>
+          (a.packageName && a.packageName === app.packageName) ||
+          a.id === app.id
+        );
+        if (libApp) {
+          // Force the latest iconUrl and name from library
+          return { ...app, ...libApp, id: app.id || libApp.id };
+        }
+        return app;
+      });
+    };
+
+    if (savedSidebar) {
+      let currentSidebar = syncAppsWithLibrary(JSON.parse(savedSidebar));
+
+      const bingola = APP_LIBRARY.find(a => a.id === 'bingola')!;
+      const star = APP_LIBRARY.find(a => a.id === 'star-ibo')!;
+
+      const hasBingola = currentSidebar.some((a: any) => a.packageName === bingola.packageName);
+      const hasStar = currentSidebar.some((a: any) => a.packageName === star.packageName);
+
+      if (!hasBingola || !hasStar) {
+        if (!hasBingola) currentSidebar.push(bingola);
+        if (!hasStar) currentSidebar.push(star);
+        setSidebarApps(currentSidebar);
+        localStorage.setItem('sidebar_apps', JSON.stringify(currentSidebar));
+      } else {
+        setSidebarApps(currentSidebar);
+        localStorage.setItem('sidebar_apps', JSON.stringify(currentSidebar));
+      }
+    } else {
+      // YouTube, Netflix, Spotify, Prime, Chrome, Bingola, Star
+      const defaults = [
+        ...APP_LIBRARY.slice(0, 5),
+        APP_LIBRARY.find(a => a.id === 'bingola')!,
+        APP_LIBRARY.find(a => a.id === 'star-ibo')!
+      ];
+      setSidebarApps(defaults);
+      localStorage.setItem('sidebar_apps', JSON.stringify(defaults));
+    }
+
+    if (savedDashboard) {
+      let currentDashboard = syncAppsWithLibrary(JSON.parse(savedDashboard));
+
+      // Auto-fill Bingola/Star if slots are empty and they aren't there
+      const hasBingola = currentDashboard.some((a: any) => a.packageName === 'com.voke.bingola');
+      if (!hasBingola) {
+        const emptyIndex = currentDashboard.findIndex((a: any) => a.id === 'empty');
+        if (emptyIndex !== -1) {
+          currentDashboard[emptyIndex] = APP_LIBRARY.find(a => a.id === 'bingola')!;
+        }
+      }
+
+      setDashboardApps(currentDashboard);
+      localStorage.setItem('dashboard_apps', JSON.stringify(currentDashboard));
+    } else {
+      const defaults = APP_LIBRARY.slice(5, 9); // Waze, Maps, Disney, etc.
+      setDashboardApps(defaults);
+      localStorage.setItem('dashboard_apps', JSON.stringify(defaults));
+    }
+  }, []);
+
+  const handleLaunchApp = (app: AppConfig) => {
+    if (isEditMode || !app || (!app.packageName && !app.webUrl)) return;
+
+    console.log("Attempting to launch:", app.name);
+
+    if (app.mode === 'webview' && app.webUrl) {
+      setActiveWebApp(app.webUrl);
+      return;
+    }
+
+    if ((window as any).AndroidBridge) {
+      (window as any).AndroidBridge.launchApp(app.packageName);
+      return;
+    }
+
+    if (app.packageName) {
+      const intentUrl = `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${app.packageName};end`;
+      const a = document.createElement('a'); a.href = intentUrl; a.style.display = 'none'; document.body.appendChild(a); a.click();
+      setTimeout(() => { if (document.body.contains(a)) document.body.removeChild(a); }, 100);
+    }
+  };
+
+  const handleDeleteApp = (id: string, type: 'sidebar' | 'dashboard') => {
+    if (type === 'sidebar') {
+      const updated = sidebarApps.filter(app => app.id !== id);
+      setSidebarApps(updated);
+      localStorage.setItem('sidebar_apps', JSON.stringify(updated));
+    } else {
+      const updated = dashboardApps.map(app => app.id === id ? { ...app, id: 'empty', name: 'Add', packageName: '', iconUrl: '' } : app);
+      setDashboardApps(updated);
+      localStorage.setItem('dashboard_apps', JSON.stringify(updated));
+    }
+  };
+
+  const handleAddApp = (app: AppConfig) => {
+    if (!showAppPicker) return;
+
+    if (showAppPicker.type === 'sidebar') {
+      const updated = [...sidebarApps, app];
+      setSidebarApps(updated);
+      localStorage.setItem('sidebar_apps', JSON.stringify(updated));
+    } else if (showAppPicker.type === 'dashboard' && showAppPicker.index !== undefined) {
+      const updated = [...dashboardApps];
+      updated[showAppPicker.index] = app;
+      setDashboardApps(updated);
+      localStorage.setItem('dashboard_apps', JSON.stringify(updated));
+    }
+    setShowAppPicker(null);
+  };
 
   return (
     <div className="h-full w-full bg-[#0B0F19] relative flex flex-col p-6 overflow-hidden">
@@ -21,139 +149,243 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </button>
       </header>
 
-      {/* Main Grid Content */}
-      <div className="flex-1 grid grid-cols-12 gap-6 min-h-0">
-        {/* Left Side: Apps Sidebar */}
-        <div className="col-span-2 flex flex-col gap-4 overflow-y-auto hide-scrollbar pb-4">
-          {[
-            { name: 'YouTube', icon: 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png' },
-            { name: 'Netflix', icon: 'https://cdn-icons-png.flaticon.com/512/5977/5977590.png' },
-            { name: 'Spotify', icon: 'https://cdn-icons-png.flaticon.com/512/174/174872.png' },
-            { name: 'Prime', icon: 'https://cdn-icons-png.flaticon.com/512/5968/5968830.png' },
-            { name: 'Chrome', icon: 'https://cdn-icons-png.flaticon.com/512/281/281764.png' },
-          ].map((app) => (
-            <button key={app.name} onClick={() => onNavigate(Screen.HOME_HUB)} className="flex flex-col items-center gap-1 group shrink-0">
-              <div className="w-14 h-14 bg-slate-800/80 rounded-[1.25rem] flex items-center justify-center border border-white/5 shadow-xl transition-all active:scale-95 group-hover:bg-slate-700">
-                <img src={app.icon} alt={app.name} className="w-8 h-8 opacity-90" />
+      {/* Main Content Area - Flexible Layout */}
+      <div className="flex-1 flex gap-6 min-h-0 overflow-hidden">
+
+        {/* Left Sidebar - Apps */}
+        <div className="w-[80px] flex flex-col gap-4 overflow-y-auto hide-scrollbar pb-4 px-1" onContextMenu={(e) => { e.preventDefault(); setIsEditMode(true); }}>
+          {sidebarApps.map((app) => (
+            <div key={app.id} className="relative flex flex-col items-center group shrink-0 w-full">
+              <div className="relative aspect-square w-full">
+                <button
+                  onClick={() => handleLaunchApp(app)}
+                  onPointerDown={() => {
+                    const timer = setTimeout(() => setIsEditMode(true), 800);
+                    (window as any)._longPressTimer = timer;
+                  }}
+                  onPointerUp={() => clearTimeout((window as any)._longPressTimer)}
+                  onPointerLeave={() => clearTimeout((window as any)._longPressTimer)}
+                  className={`w-full h-full bg-slate-800/80 rounded-[1.25rem] flex items-center justify-center border border-white/5 shadow-xl transition-all active:scale-90 group-hover:bg-slate-700 ${isEditMode ? 'animate-pulse' : ''}`}
+                >
+                  <img src={app.iconUrl} alt={app.name} className="w-2/5 h-2/5 object-contain pointer-events-none" />
+                </button>
+
+                {isEditMode && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDeleteApp(app.id, 'sidebar'); }}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-lg z-30 hover:bg-red-500 border border-white/20"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
-              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{app.name}</span>
-            </button>
-          ))}
-          <button onClick={() => onNavigate(Screen.MULTITASKING)} className="mt-auto flex flex-col items-center gap-1 shrink-0">
-            <div className="w-14 h-14 bg-sky-500/10 rounded-[1.25rem] flex items-center justify-center border border-sky-500/30 text-sky-400 shadow-lg shadow-sky-500/10">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+              <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1 text-center truncate w-full">{app.name}</span>
             </div>
-            <span className="text-[10px] text-sky-500 font-bold uppercase tracking-widest">Grid</span>
+          ))}
+
+          <button
+            onClick={() => setShowAppPicker({ type: 'sidebar' })}
+            className="flex flex-col items-center gap-1 group shrink-0 aspect-square w-full"
+          >
+            <div className="w-full h-full bg-emerald-500/10 rounded-[1.25rem] flex items-center justify-center border border-emerald-500/30 text-emerald-400 shadow-xl transition-all active:scale-95 group-hover:bg-emerald-500/20">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path></svg>
+            </div>
+          </button>
+
+          {isEditMode && (
+            <button
+              onClick={() => setIsEditMode(false)}
+              className="mt-2 py-2 bg-sky-500 text-slate-900 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-sky-500/20 shrink-0"
+            >
+              Done
+            </button>
+          )}
+
+          <button onClick={() => onNavigate(Screen.MULTITASKING)} className="mt-auto flex flex-col items-center gap-1 shrink-0 aspect-square w-full">
+            <div className="w-full h-full bg-sky-500/10 rounded-[1.25rem] flex items-center justify-center border border-sky-500/30 text-sky-400 shadow-lg shadow-sky-500/10 hover:bg-sky-500/20 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /></svg>
+            </div>
           </button>
         </div>
 
-        {/* Center: Main Widgets - Explicitly managed row height to prevent cutoff */}
-        <div className="col-span-10 grid grid-cols-2 grid-rows-2 gap-6 h-full min-h-0">
+        {/* Right Side - Dashboard Widgets Grid */}
+        {/* Changed from fixed cols to flexible grid that fills space */}
+        <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4 min-w-0">
+
           {/* Navigation Widget */}
-          <div className="bg-slate-800/40 backdrop-blur-md rounded-[2.5rem] border border-white/5 p-6 flex flex-col relative overflow-hidden shadow-2xl min-h-0 group">
-            <div className="flex items-center gap-3 mb-4 shrink-0">
+          <div className="bg-slate-800/40 backdrop-blur-md rounded-[2.5rem] border border-white/5 p-5 flex flex-col relative overflow-hidden shadow-2xl group min-h-0">
+            <div className="flex items-center gap-3 mb-2 shrink-0">
               <div className="text-sky-400">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg>
               </div>
               <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Navigation</span>
             </div>
             <div className="flex-1 bg-[#1E293B] rounded-3xl overflow-hidden relative min-h-0">
               <img src="https://picsum.photos/id/16/600/400" className="w-full h-full object-cover opacity-40 grayscale group-hover:scale-105 transition-transform duration-700" />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent"></div>
-              <div className="absolute bottom-4 left-4 right-4 bg-sky-500 p-3 rounded-2xl shadow-2xl flex justify-between items-center transform translate-y-0 group-hover:-translate-y-1 transition-transform">
+              <div className="absolute bottom-3 left-3 right-3 bg-sky-500 p-2.5 rounded-2xl shadow-2xl flex justify-between items-center transform translate-y-0 group-hover:-translate-y-1 transition-transform">
                 <div className="text-slate-900 leading-tight">
-                  <p className="text-[10px] font-bold uppercase opacity-70">Next Stop</p>
-                  <p className="font-black text-sm">Central Park Mall</p>
+                  <p className="text-[9px] font-bold uppercase opacity-70">Next Stop</p>
+                  <p className="font-black text-xs sm:text-sm">Central Park Mall</p>
                 </div>
-                <div className="bg-slate-900/10 rounded-xl p-2 text-slate-900 font-bold text-xs">5 min</div>
+                <div className="bg-slate-900/10 rounded-xl p-1.5 text-slate-900 font-bold text-[10px]">5 min</div>
               </div>
             </div>
           </div>
 
           {/* Music Widget */}
-          <div className="bg-gradient-to-br from-slate-800/40 to-slate-900/60 backdrop-blur-md rounded-[2.5rem] border border-white/5 p-6 flex flex-col relative shadow-2xl min-h-0">
-             <div className="flex items-center gap-3 mb-4 shrink-0">
+          <div className="bg-gradient-to-br from-slate-800/40 to-slate-900/60 backdrop-blur-md rounded-[2.5rem] border border-white/5 p-5 flex flex-col relative shadow-2xl min-h-0 overflow-hidden">
+            <div className="flex items-center gap-3 mb-2 shrink-0">
               <div className="text-pink-400">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
               </div>
               <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Music</span>
             </div>
-            <div className="flex flex-1 items-center gap-6 min-h-0">
-              <div className="w-32 h-32 rounded-full border-4 border-sky-400/20 p-1 shrink-0 shadow-2xl">
-                <div className="w-full h-full rounded-full bg-cover bg-center animate-[spin_15s_linear_infinite]" style={{backgroundImage: 'url("https://picsum.photos/id/40/300/300")'}}></div>
+            <div className="flex flex-1 items-center gap-4 min-h-0">
+              <div className="h-full aspect-square max-h-[120px] rounded-full border-4 border-sky-400/20 p-1 shrink-0 shadow-2xl">
+                <div className="w-full h-full rounded-full bg-cover bg-center animate-[spin_15s_linear_infinite]" style={{ backgroundImage: 'url("https://picsum.photos/id/40/300/300")' }}></div>
               </div>
-              <div className="flex-1 overflow-hidden">
-                <h3 className="text-2xl font-black mb-1 truncate leading-tight">Neon Drift</h3>
-                <p className="text-sky-400 font-medium mb-4 truncate text-sm">Synthwave City • 2:45</p>
-                <div className="flex items-center gap-6">
-                  <button className="text-slate-500 hover:text-white transition-colors"><svg width="22" height="22" fill="currentColor" viewBox="0 0 256 256"><path d="M208,32V224a8,8,0,0,1-12.33,6.72L80,154.06V224a8,8,0,0,1-16,0V32a8,8,0,0,1,16,0V101.94l115.67-76.66A8,8,0,0,1,208,32Z"></path></svg></button>
-                  <button className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-slate-900 shadow-2xl active:scale-90 transition-transform"><svg width="24" height="24" fill="currentColor" viewBox="0 0 256 256"><path d="M200,128a8,8,0,0,1-4.22,7.12l-120,64A8,8,0,0,1,64,192V64a8,8,0,0,1,11.78-7.12l120,64A8,8,0,0,1,200,128Z"></path></svg></button>
-                  <button className="text-slate-500 hover:text-white transition-colors"><svg width="22" height="22" fill="currentColor" viewBox="0 0 256 256"><path d="M208,32a8,8,0,0,0-11.67-7.28L80.66,101.39A8,8,0,0,0,80.66,114.6l115.67,76.66A8,8,0,0,0,208,184V32Zm-16,134.41L99.23,108,192,46.33V166.41ZM80,32V184a8,8,0,0,1-16,0V32a8,8,0,0,1,16,0Z"></path></svg></button>
+              <div className="flex-1 overflow-hidden flex flex-col justify-center">
+                <h3 className="text-xl sm:text-2xl font-black mb-1 truncate leading-tight">Neon Drift</h3>
+                <p className="text-sky-400 font-medium mb-3 truncate text-xs sm:text-sm">Synthwave City • 2:45</p>
+                <div className="flex items-center gap-4">
+                  <button className="text-slate-500 hover:text-white transition-colors"><svg width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M208,32V224a8,8,0,0,1-12.33,6.72L80,154.06V224a8,8,0,0,1-16,0V32a8,8,0,0,1,16,0V101.94l115.67-76.66A8,8,0,0,1,208,32Z"></path></svg></button>
+                  <button className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-900 shadow-2xl active:scale-90 transition-transform"><svg width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M200,128a8,8,0,0,1-4.22,7.12l-120,64A8,8,0,0,1,64,192V64a8,8,0,0,1,11.78-7.12l120,64A8,8,0,0,1,200,128Z"></path></svg></button>
+                  <button className="text-slate-500 hover:text-white transition-colors"><svg width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M208,32a8,8,0,0,0-11.67-7.28L80.66,101.39A8,8,0,0,0,80.66,114.6l115.67,76.66A8,8,0,0,0,208,184V32Zm-16,134.41L99.23,108,192,46.33V166.41ZM80,32V184a8,8,0,0,1-16,0V32a8,8,0,0,1,16,0Z"></path></svg></button>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Vehicle Status Widget */}
-          <div className="bg-slate-800/40 backdrop-blur-md rounded-[2.5rem] border border-white/5 p-6 flex flex-col shadow-2xl min-h-0">
-             <div className="flex items-center gap-3 mb-4 shrink-0">
+          <div className="bg-slate-800/40 backdrop-blur-md rounded-[2.5rem] border border-white/5 p-5 flex flex-col shadow-2xl min-h-0 overflow-hidden">
+            <div className="flex items-center gap-3 mb-2 shrink-0">
               <div className="text-emerald-400">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" /><circle cx="7" cy="17" r="2" /><path d="M9 17h6" /><circle cx="17" cy="17" r="2" /></svg>
               </div>
               <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Vehicle Hub</span>
             </div>
             <div className="flex-1 flex flex-col justify-between min-h-0">
               <div className="flex justify-between items-end">
                 <div>
-                  <h4 className="text-4xl font-black leading-none text-white">84<span className="text-lg text-slate-500">%</span></h4>
-                  <p className="text-xs font-bold uppercase tracking-widest text-emerald-400">Battery Level</p>
+                  <h4 className="text-3xl sm:text-4xl font-black leading-none text-white">84<span className="text-lg text-slate-500">%</span></h4>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Battery</p>
                 </div>
                 <div className="text-right">
-                  <h4 className="text-4xl font-black leading-none text-white">342<span className="text-lg text-slate-500">km</span></h4>
-                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Total Range</p>
+                  <h4 className="text-3xl sm:text-4xl font-black leading-none text-white">342<span className="text-lg text-slate-500">km</span></h4>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Range</p>
                 </div>
               </div>
-              <div className="h-4 w-full bg-slate-700/50 rounded-full overflow-hidden p-1 my-3">
-                <div className="h-full bg-emerald-400 rounded-full shadow-[0_0_15px_rgba(52,211,153,0.5)] transition-all duration-1000" style={{width: '84%'}}></div>
+              <div className="h-3 w-full bg-slate-700/50 rounded-full overflow-hidden p-0.5 my-2">
+                <div className="h-full bg-emerald-400 rounded-full shadow-[0_0_15px_rgba(52,211,153,0.5)] transition-all duration-1000" style={{ width: '84%' }}></div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/5 rounded-2xl p-3 flex items-center justify-between border border-white/5 hover:bg-white/10 transition-colors">
-                   <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Tires</span>
-                   <span className="text-xs font-bold text-emerald-400">OK</span>
+              <div className="flex gap-4">
+                <div className="flex-1 bg-white/5 rounded-2xl p-2 flex items-center justify-between border border-white/5 hover:bg-white/10 transition-colors">
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Tires</span>
+                  <span className="text-[10px] font-bold text-emerald-400">OK</span>
                 </div>
-                <div className="bg-white/5 rounded-2xl p-3 flex items-center justify-between border border-white/5 hover:bg-white/10 transition-colors">
-                   <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Service</span>
-                   <span className="text-xs font-bold text-slate-300">In 2k km</span>
+                <div className="flex-1 bg-white/5 rounded-2xl p-2 flex items-center justify-between border border-white/5 hover:bg-white/10 transition-colors">
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Service</span>
+                  <span className="text-[10px] font-bold text-slate-300">2k km</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Quick Settings Widget */}
-          <div className="bg-slate-800/40 backdrop-blur-md rounded-[2.5rem] border border-white/5 p-6 flex flex-col shadow-2xl min-h-0">
-            <div className="flex items-center gap-3 mb-4 shrink-0">
+          {/* Customizable Apps Grid (Main 4) */}
+          <div className="bg-slate-800/40 backdrop-blur-md rounded-[2.5rem] border border-white/5 p-5 flex flex-col shadow-2xl min-h-0 overflow-hidden">
+            <div className="flex items-center gap-3 mb-2 shrink-0">
               <div className="text-sky-400">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z" /></svg>
               </div>
-              <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Quick Tools</span>
+              <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Favoritos</span>
             </div>
-            <div className="grid grid-cols-2 gap-4 flex-1 pb-2 min-h-0">
-              <button onClick={() => onNavigate(Screen.AUDIO_SETTINGS)} className="bg-white/5 hover:bg-white/10 rounded-3xl flex flex-col items-center justify-center gap-2 p-4 transition-all hover:scale-105 active:scale-95 min-h-0 border border-white/5">
-                <div className="w-10 h-10 bg-slate-700/50 rounded-2xl flex items-center justify-center text-sky-400 shrink-0 shadow-lg shadow-sky-500/10">
-                  <svg width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M160,32V224a8,8,0,0,1-12.91,6.31L77.25,176H32a16,16,0,0,1-16-16V96A16,16,0,0,1,32,80H77.25l69.84-54.31A8,8,0,0,1,160,32Zm-16,21.09L81.25,96.31A8,8,0,0,1,72,96H32v64H72a8,8,0,0,1,9.25-.31L144,202.91ZM216,128a40,40,0,0,1-11.72,28.28,8,8,0,1,1-11.31-11.31,24,24,0,0,0,0-33.94,8,8,0,0,1,11.31-11.31A40,40,0,0,1,216,128Zm32,0c0,30.93-12.04,59.91-33.92,81.59a8,8,0,1,1-11.16-11.49C222.18,178.6,232,154.19,232,128s-9.82-50.6-29.08-70.1a8,8,0,0,1,11.16-11.49C235.96,68.09,248,97.07,248,128Z"></path></svg>
+            <div className="grid grid-cols-2 grid-rows-2 gap-3 flex-1 min-h-0">
+              {dashboardApps.map((app, index) => (
+                <div key={index} className="relative group min-h-0">
+                  <button
+                    onClick={() => app.id === 'empty' ? setShowAppPicker({ type: 'dashboard', index }) : handleLaunchApp(app)}
+                    onPointerDown={() => {
+                      const timer = setTimeout(() => setIsEditMode(true), 800);
+                      (window as any)._longPressTimer = timer;
+                    }}
+                    onPointerUp={() => clearTimeout((window as any)._longPressTimer)}
+                    onPointerLeave={() => clearTimeout((window as any)._longPressTimer)}
+                    className="w-full h-full bg-white/5 hover:bg-white/10 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all hover:scale-[1.02] active:scale-95 border border-white/5 p-1"
+                  >
+                    {app.id === 'empty' ? (
+                      <div className="flex flex-col items-center gap-1 text-slate-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path></svg>
+                      </div>
+                    ) : (
+                      <>
+                        <img src={app.iconUrl} className="w-6 h-6 sm:w-8 sm:h-8 object-contain" alt={app.name} />
+                        <span className="text-[8px] font-bold uppercase tracking-widest text-white truncate max-w-[90%]">{app.name}</span>
+                      </>
+                    )}
+                  </button>
+                  {isEditMode && app.id !== 'empty' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteApp(app.id, 'dashboard'); }}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-lg z-20 hover:bg-red-500 border border-white/20"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
-                <span className="text-xs font-bold uppercase tracking-widest text-white">Audio</span>
-              </button>
-              <button onClick={() => onNavigate(Screen.DISPLAY_SETTINGS)} className="bg-white/5 hover:bg-white/10 rounded-3xl flex flex-col items-center justify-center gap-2 p-4 transition-all hover:scale-105 active:scale-95 min-h-0 border border-white/5">
-                 <div className="w-10 h-10 bg-slate-700/50 rounded-2xl flex items-center justify-center text-pink-400 shrink-0 shadow-lg shadow-pink-500/10">
-                  <svg width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M216,40H40A16,16,0,0,0,24,56V176a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,136H40V56H216V176Zm-8,32a8,8,0,0,1-8,8H56a8,8,0,0,1,0-16H200A8,8,0,0,1,208,208Z"></path></svg>
-                </div>
-                <span className="text-xs font-bold uppercase tracking-widest text-white">Display</span>
-              </button>
+              ))}
             </div>
           </div>
         </div>
       </div>
+
+      {/* App Picker Modal */}
+      {showAppPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-black/60 backdrop-blur-md">
+          <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-white/5 flex justify-between items-center">
+              <h2 className="text-xl font-bold">Escolher Aplicativo</h2>
+              <button
+                onClick={() => setShowAppPicker(null)}
+                className="p-2 bg-white/5 rounded-full hover:bg-white/10"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 grid grid-cols-4 gap-4 hide-scrollbar">
+              {APP_LIBRARY.map((app) => (
+                <button
+                  key={app.id}
+                  onClick={() => handleAddApp(app)}
+                  className="flex flex-col items-center gap-2 p-4 bg-white/5 rounded-3xl hover:bg-white/10 active:scale-95 transition-all border border-white/5"
+                >
+                  <img src={app.iconUrl} className="w-12 h-12 object-contain" alt={app.name} />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-center">{app.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Box Mode: Internal WebApp Viewer */}
+      {activeWebApp && (
+        <div className="fixed inset-0 z-[100] bg-black flex flex-col">
+          <div className="absolute top-4 right-4 z-[110]">
+            <button
+              onClick={() => setActiveWebApp(null)}
+              className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/20 shadow-2xl active:scale-90 transition-all border border-white/10"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path></svg>
+            </button>
+          </div>
+          <iframe
+            src={activeWebApp}
+            className="w-full h-full border-none"
+            allow="autoplay; encrypted-media; fullscreen"
+          />
+        </div>
+      )}
     </div>
   );
 };
