@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Screen, AppConfig } from '../types';
 import { APP_LIBRARY } from '../appIcons';
 
@@ -15,6 +15,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [showAppPicker, setShowAppPicker] = useState<{ type: 'sidebar' | 'dashboard', index?: number } | null>(null);
   const [activeWebApp, setActiveWebApp] = useState<string | null>(null);
+  const [showCloseButton, setShowCloseButton] = useState(true);
+  const closeButtonTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const savedSidebar = localStorage.getItem('sidebar_apps');
@@ -94,6 +96,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
     if (app.mode === 'webview' && app.webUrl) {
       setActiveWebApp(app.webUrl);
+      resetCloseButtonTimer();
       return;
     }
 
@@ -107,6 +110,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       const a = document.createElement('a'); a.href = intentUrl; a.style.display = 'none'; document.body.appendChild(a); a.click();
       setTimeout(() => { if (document.body.contains(a)) document.body.removeChild(a); }, 100);
     }
+  };
+
+  const resetCloseButtonTimer = () => {
+    setShowCloseButton(true);
+    if (closeButtonTimer.current) clearTimeout(closeButtonTimer.current);
+    closeButtonTimer.current = setTimeout(() => {
+      setShowCloseButton(false);
+    }, 3000);
   };
 
   const handleDeleteApp = (id: string, type: 'sidebar' | 'dashboard') => {
@@ -370,19 +381,26 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
       {/* Box Mode: Internal WebApp Viewer */}
       {activeWebApp && (
-        <div className="fixed inset-0 z-[100] bg-black flex flex-col">
-          <div className="absolute top-4 right-4 z-[110]">
+        <div
+          className="fixed inset-0 z-[100] bg-black flex flex-col"
+          onClick={resetCloseButtonTimer}
+          onMouseMove={resetCloseButtonTimer}
+          onTouchStart={resetCloseButtonTimer}
+        >
+          <div className={`absolute top-4 right-4 z-[110] transition-opacity duration-500 ${showCloseButton ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
             <button
-              onClick={() => setActiveWebApp(null)}
-              className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/20 shadow-2xl active:scale-90 transition-all border border-white/10"
+              onClick={(e) => { e.stopPropagation(); setActiveWebApp(null); }}
+              className="w-10 h-10 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-black/60 shadow-2xl active:scale-90 transition-all border border-white/10"
+              title="Voltar ao Menu"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"></path></svg>
             </button>
           </div>
           <iframe
             src={activeWebApp}
             className="w-full h-full border-none"
             allow="autoplay; encrypted-media; fullscreen"
+            title="App Content"
           />
         </div>
       )}

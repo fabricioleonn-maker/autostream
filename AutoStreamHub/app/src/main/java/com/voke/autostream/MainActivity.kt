@@ -29,8 +29,18 @@ class MainActivity : AppCompatActivity() {
         webSettings.domStorageEnabled = true
         webSettings.allowFileAccess = true
         webSettings.allowContentAccess = true
+        webSettings.allowFileAccessFromFileURLs = true
         webSettings.allowUniversalAccessFromFileURLs = true
+        webSettings.databaseEnabled = true
+        webSettings.setSupportMultipleWindows(false)
+        webSettings.javaScriptCanOpenWindowsAutomatically = true
         webSettings.mediaPlaybackRequiresUserGesture = false
+        webSettings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+        
+        // Disable scrollbars and standard browser UI hints for a "Box" feel
+        binding.webView.isVerticalScrollBarEnabled = false
+        binding.webView.isHorizontalScrollBarEnabled = false
+        binding.webView.overScrollMode = android.view.View.OVER_SCROLL_NEVER
 
         // Bridge Interface
         binding.webView.addJavascriptInterface(WebAppInterface(this), "AndroidBridge")
